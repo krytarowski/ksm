@@ -19,6 +19,8 @@
 
 #ifdef __linux__
 #include <linux/kernel.h>
+#elif defined(__NetBSD__)
+// Nothing
 #else
 #include <intrin.h>
 #endif
@@ -102,6 +104,8 @@
 /* Short name:  */
 #ifdef __linux__
 #define cpu_nr()			smp_processor_id()
+#elif defined(__NetBSD__)
+#define cpu_nr()			curcpu()->ci_cpuid
 #else
 #define cpu_nr()			KeGetCurrentProcessorNumberEx(NULL)
 #endif
@@ -111,6 +115,10 @@
 #ifdef __linux__
 #define proc_name()			current->comm
 #define proc_id()			current->pid
+#elif defined(__NetBSD__)
+#define current				curproc
+#define proc_name()			current->p_comm
+#define proc_id()			current->p_pid
 #else
 #define current				PsGetCurrentProcess()
 #define proc_name()			PsGetProcessImageFileName(current)
@@ -121,6 +129,9 @@
 #ifdef __linux__
 #define KSM_DEBUG(fmt, args...)		printk(KERN_INFO "ksm: CPU %hd: %s: " fmt, cpu_nr(), __func__, ##args)
 #define KSM_DEBUG_RAW(str)		printk(KERN_INFO "ksm: CPU %hd: %s: " str, cpu_nr(), __func__)
+#elif defined(__NetBSD__)
+#define KSM_DEBUG(fmt, args...)		printf("ksm: CPU %hd: %s: " fmt, cpu_nr(), __func__, ##args)
+#define KSM_DEBUG_RAW(str)		printf("ksm: CPU %hd: %s: " str, cpu_nr(), __func__)
 #else
 #ifdef _MSC_VER
 #define KSM_DEBUG(fmt, ...)		do_print("ksm: CPU %hd: " __func__ ": " fmt, cpu_nr(), __VA_ARGS__)
@@ -647,7 +658,7 @@ extern void ksm_handle_epage_ve(struct epage_info *epage, struct ept_ve_around *
 
 /* sandbox.c  */
 #ifdef PMEM_SANDBOX
-#ifndef __linux__
+#if !defined(__linux__) && !defined(__NetBSD__)
 typedef HANDLE pid_t;
 #endif
 
