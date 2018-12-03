@@ -325,13 +325,46 @@ static inline pte_t *pte_from_cr3_va(uintptr_t cr3, uintptr_t va)
 
 static inline void *mm_remap(u64 phys, size_t size)
 {
+#ifdef __NetBSD__
+	vaddr_t kva;
+	vaddr_t va, end_va;
+	unsigned long offset;
+	paddr_t pa = (paddr_t)phys;
+
+	offset = pa & PAGE_MASK;
+	pa = trunc_page(pa);
+	size = round_page(size + offset);
+
+	kva = uvm_km_alloc(kernel_map, size, PAGE_SIZE, UVM_KMF_VAONLY|UVM_KMF_WAITVA);
+	for (va = kva, end_va = kva + size; va < end_va; va += PAGE_SIZE, pa += PAGE_SIZE) {
+		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, PMAP_WIRED);
+	}
+	pmap_update(pmap_kernel());
+
+	return (void *)(kva + offset);
+#else
 	return MmMapIoSpace((PHYSICAL_ADDRESS) { .QuadPart = phys },
 			    size, MmNonCached);
+#endif
 }
 
 static inline void mm_unmap(void *addr, size_t size)
 {
+#ifdef __NetBSD__
+    unsigned long offset;
+    vaddr_t kva = (vaddr_t)addr;
+    
+    offset = kva & PAGE_MASK;
+    size = round_page(size + offset);
+    kva = trunc_page(kva);
+  
+    pmap_kremove(kva, size);
+    pmap_update(pmap_kernel());
+    
+    uvm_km_alloc(kernel_map, kva, size, UVM_KMF_VAONLY);
+#else
 	return MmUnmapIoSpace(addr, size);
+#endif
 }
 
 static inline void *mm_remap_iomem(u64 phys, size_t size)
@@ -346,35 +379,69 @@ static inline void mm_unmap_iomem(void *addr, size_t size)
 
 static inline void *mm_alloc_page(void)
 {
+#ifdef __NetBSD__
+	struct vm_page *page;
+
+	page = uvm_pagealloc(NULL, 0, NULL, UVM_PGA_ZERO);
+	return (void*)VM_PAGE_TO_PHYS(page);
+#else
 	void *v = ExAllocatePoolWithTag(NonPagedPool, PAGE_SIZE, 0);
 	if (v)
 		memset(v, 0, PAGE_SIZE);
 
 	return v;
+#endif
 }
 
 static inline void __mm_free_page(void *v)
 {
+#ifdef __NetBSD__
+	struct vm_page *page;
+
+	page = PHYS_TO_VM_PAGE((paddr_t)v);
+
+	uvm_pagefree(page);
+#else
 	ExFreePoolWithTag(v, 0);
+#endif
 }
 
 static inline void *mm_alloc_pool(size_t size)
 {
+#ifdef __NetBSD__
+	struct vm_page *page;
+
+	page = uvm_pagealloc(NULL, 0, NULL, UVM_PGA_ZERO);
+	return (void*)VM_PAGE_TO_PHYS(page);
+#else
 	void *v = ExAllocatePoolWithTag(NonPagedPool, size, 0);
 	if (v)
 		memset(v, 0, size);
 
 	return v;
+#endif
 }
 
 static inline void __mm_free_pool(void *v)
 {
+#ifdef __NetBSD__
+	struct vm_page *page;
+
+	page = PHYS_TO_VM_PAGE((paddr_t)v);
+
+	uvm_pagefree(page);
+#else
 	ExFreePool(v);
+#endif
 }
 
 static inline bool mm_is_kernel_addr(void *va)
 {
+#ifdef __NetBSD__
+	return (uintptr_t)va >= (uintptr_t)VM_MAXUSER_ADDRESS;
+#else
 	return va >= MmSystemRangeStart;
+#endif
 }
 #endif
 
