@@ -420,6 +420,7 @@
 #define MSR_KERNEL_GS_BASE	0xc0000102 /* SwapGS GS shadow */
 #define MSR_TSC_AUX		0xc0000103 /* Auxiliary TSC */
 
+#ifndef __NetBSD__
 /* EFER bits: */
 #define _EFER_SCE		0  /* SYSCALL/SYSRET */
 #define _EFER_LME		8  /* Long mode enable */
@@ -436,13 +437,22 @@
 #define EFER_SVME		(1<<_EFER_SVME)
 #define EFER_LMSLE		(1<<_EFER_LMSLE)
 #define EFER_FFXSR		(1<<_EFER_FFXSR)
+#endif
 
 /* Intel MSRs. Some also available on other CPUs */
 #define MSR_IA32_PERFCTR0		0x000000c1
 #define MSR_IA32_PERFCTR1		0x000000c2
+
+#ifndef MSR_FSB_FREQ
 #define MSR_FSB_FREQ			0x000000cd
+#endif
+
 #define MSR_PLATFORM_INFO		0x000000ce
+
+#ifndef MSR_MTRRcap
 #define MSR_MTRRcap			0x000000fe
+#endif
+
 #define MSR_MTRR_PHYS_BASE		0x00000200
 #define MSR_MTRR_PHYS_MASK		0x00000201
 #define MSR_IA32_BBL_CR_CTL		0x00000119
@@ -465,6 +475,7 @@
 #define LBR_INFO_ABORT			BIT_ULL(61)
 #define LBR_INFO_CYCLES			0xffff
 
+#ifndef __NetBSD__
 #define MSR_MTRRfix64K_00000		0x00000250
 #define MSR_MTRRfix16K_80000		0x00000258
 #define MSR_MTRRfix16K_A0000		0x00000259
@@ -477,6 +488,7 @@
 #define MSR_MTRRfix4K_F0000		0x0000026e
 #define MSR_MTRRfix4K_F8000		0x0000026f
 #define MSR_MTRRdefType			0x000002ff
+#endif
 
 #define MSR_IA32_CR_PAT			0x00000277
 
@@ -764,7 +776,9 @@ extern void __writecr2(uintptr_t);
  * Helper functions for segmentation (IDT, GDT, LDT, etc.)
  */
 #ifndef __linux__
+#ifndef __NetBSD__
 #include <pshpack1.h>
+#endif
 #endif
 struct gdtr {
 	u16 limit;
@@ -805,7 +819,9 @@ struct kidt_entry64 {
 	u32 zero;
 } __packed;
 #ifndef __linux__
+#ifndef __NetBSD__
 #include <poppack.h>
+#endif
 #endif
 
 #ifndef _MSC_VER
@@ -1094,26 +1110,46 @@ enum ioapic_dest {
 };
 #endif
 
+#ifdef __NetBSD__
+#include <machine/cpufunc.h>
+#endif
+
 static inline bool lapic_in_kernel(void)
 {
+#ifdef __NetBSD__
+	rdmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_ENABLE;
+#else
 	return __readmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_ENABLE;
+#endif
 }
 
 #ifndef __linux__
 static inline bool x2apic_enabled(void)
 {
+#ifdef __NetBSD__
+	rdmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_X2APIC;
+#else
 	return __readmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_X2APIC;
+#endif
 }
 #endif
 
 static inline bool lapic_is_bsp(void)
 {
+#ifdef __NetBSD__
+	rdmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_BSP;
+#else
 	return __readmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_BSP;
+#endif
 }
 
 static inline u64 lapic_base_phys(void)
 {
+#ifdef __NetBSD__
+	rdmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_BASE;
+#else
 	return __readmsr(MSR_IA32_APICBASE) & MSR_IA32_APICBASE_BASE;
+#endif
 }
 
 #define IOAPIC_REGSEL		0x00

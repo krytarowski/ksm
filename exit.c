@@ -23,6 +23,10 @@
 #ifdef __linux__
 #include <linux/kernel.h>
 #elif defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/types.h>
+#include <machine/cpufunc.h>
+#include <machine/pio.h>
 #else
 #include <ntddk.h>
 #include <intrin.h>
@@ -508,8 +512,13 @@ static bool vcpu_handle_invlpg(struct vcpu *vcpu)
 static bool vcpu_handle_rdtsc(struct vcpu *vcpu)
 {
 	VCPU_TRACER_START();
+	u64 tsc;
 
-	u64 tsc = __rdtsc();
+#ifdef __NetBSD__
+	tsc = rdtsc();
+#else
+	tsc = __rdtsc();
+#endif
 	ksm_write_reg32(vcpu, STACK_REG_AX, (u32)tsc);
 	ksm_write_reg32(vcpu, STACK_REG_DX, tsc >> 32);
 	vcpu_advance_rip(vcpu);
@@ -633,6 +642,7 @@ static inline void vcpu_do_exit(struct vcpu *vcpu)
 	vcpu_vm_succeed(vcpu);
 
 	uintptr_t cr3 = vmcs_read(GUEST_CR3);
+#define __writecr3 lcr3
 	__writecr3(cr3);
 
 	/* See __vmx_entrypoint in assembly on how this is used.  */
@@ -1851,6 +1861,20 @@ static bool vcpu_handle_io_instr(struct vcpu *vcpu)
 	if (exit & 8) {
 		if (exit & 16) {
 			switch (size) {
+#define __inbytestring insb
+#define __inwordstring insw
+#define __indwordstring insl
+#define __inbyte inb
+#define __inword inw
+#define __indword inl
+#define __outbytestring outsb
+#define __outwordstring outsw
+#define __outdwordstring outsl
+#define __outbyte outb
+#define __outword outw
+#define __outdword outl
+#define __readmsr rdmsr
+#define __writemsr wrmsr
 			case 1: __inbytestring(port, (u8 *)addr, count); break;
 			case 2: __inwordstring(port, (u16 *)addr, count); break;
 			case 4: __indwordstring(port, (u32 *)addr, count); break;
@@ -2248,7 +2272,17 @@ static bool vcpu_handle_rdtscp(struct vcpu *vcpu)
 	VCPU_TRACER_START();
 
 	u32 tsc_aux;
-	u64 tsc = __rdtscp((unsigned int *)&tsc_aux);
+	u64 tsc;
+
+#ifdef __NetBSD__
+	uint64_t rax,rdx;
+	uint32_t aux;
+	__asm__ __volatile__ ( "rdtscp\n" : "=a" (rax), "=d" (rdx), "=c" (aux) : : );
+	tsc = (rdx << 32) + rax;
+	tsc_aux = aux;
+#else
+	tsc = __rdtscp((unsigned int *)&tsc_aux);
+#endif
 
 	ksm_write_reg32(vcpu, STACK_REG_AX, (u32)tsc);
 	ksm_write_reg32(vcpu, STACK_REG_DX, tsc >> 32);
