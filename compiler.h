@@ -51,14 +51,15 @@
 		KSM_DEBUG("Badness in %s at %s:%d\n", __func__, __FILE__, __LINE__);	\
 } while (0)
 
-#ifndef __NetBSD__
 /* Don't expose this to the assembler, it won't understand it.  */
 #ifndef __ASSEMBLY__
 /* Long names  */
+#ifndef __NetBSD__
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned long int uint32_t;
 typedef unsigned long long uint64_t;
+#endif
 
 typedef signed char sint8_t;
 typedef signed short sint16_t;
@@ -76,6 +77,7 @@ typedef sint16_t s16;
 typedef sint32_t s32;
 typedef sint64_t s64;
 
+#ifndef __NetBSD__
 #ifndef _UINTPTR_T_DEFINED
 typedef unsigned long long uintptr_t;
 #define _UINTPTR_T_DEFINED
