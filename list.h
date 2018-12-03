@@ -18,12 +18,12 @@ struct list_head {
 
 #define LIST_POISON1	((void *)0x00100100)
 #define LIST_POISON2	((void *)0x00200200)
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
+#define KSM_LIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
-	struct list_head name = LIST_HEAD_INIT(name)
+#define KSM_LIST_HEAD(name) \
+	struct list_head name = KSM_LIST_HEAD_INIT(name)
 
-static inline void INIT_LIST_HEAD(struct list_head *list)
+static inline void KSM_INIT_LIST_HEAD(struct list_head *list)
 {
 	list->next = list;
 	list->prev = list;
@@ -122,7 +122,7 @@ static inline void list_replace_init(struct list_head *old,
 				     struct list_head *new)
 {
 	list_replace(old, new);
-	INIT_LIST_HEAD(old);
+	KSM_INIT_LIST_HEAD(old);
 }
 
 /**
@@ -132,7 +132,7 @@ static inline void list_replace_init(struct list_head *old,
 static inline void list_del_init(struct list_head *entry)
 {
 	__list_del_entry(entry);
-	INIT_LIST_HEAD(entry);
+	KSM_INIT_LIST_HEAD(entry);
 }
 
 /**
@@ -255,7 +255,7 @@ static inline void list_cut_position(struct list_head *list,
 		(head->next != entry && head != entry))
 		return;
 	if (entry == head)
-		INIT_LIST_HEAD(list);
+		KSM_INIT_LIST_HEAD(list);
 	else
 		__list_cut_position(list, head, entry);
 }
@@ -310,7 +310,7 @@ static inline void list_splice_init(struct list_head *list,
 {
 	if (!list_empty(list)) {
 		__list_splice(list, head, head->next);
-		INIT_LIST_HEAD(list);
+		KSM_INIT_LIST_HEAD(list);
 	}
 }
 
@@ -327,7 +327,7 @@ static inline void list_splice_tail_init(struct list_head *list,
 {
 	if (!list_empty(list)) {
 		__list_splice(list, head->prev, head);
-		INIT_LIST_HEAD(list);
+		KSM_INIT_LIST_HEAD(list);
 	}
 }
 
