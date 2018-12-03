@@ -23,6 +23,8 @@
 #ifndef _INTTYPES_H
 #define _INTTYPES_H	1
 
+#ifndef __NetBSD__
+
 # define __PRI64_PREFIX	"ll"
 #ifdef __linux__
 # define __PRIPTR_PREFIX "l"
@@ -243,5 +245,7 @@
 # define SCNoPTR	__PRIPTR_PREFIX "o"
 # define SCNuPTR	__PRIPTR_PREFIX "u"
 # define SCNxPTR	__PRIPTR_PREFIX "x"
+
+#endif
 
 #endif /* inttypes.h */

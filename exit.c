@@ -22,6 +22,7 @@
 */
 #ifdef __linux__
 #include <linux/kernel.h>
+#elif defined(__NetBSD__)
 #else
 #include <ntddk.h>
 #include <intrin.h>

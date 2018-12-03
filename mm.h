@@ -26,6 +26,15 @@
 #include <linux/sched.h>
 #endif
 
+#ifdef __NetBSD__
+#define __HAVE_DIRECT_MAP
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/kmem.h>
+#include <uvm/uvm.h>
+#include <machine/pmap.h>
+#endif
+
 #define PGD_SHIFT_P		39
 #define PUD_SHIFT_P		30
 #define PMD_SHIFT_P		21
@@ -100,10 +109,29 @@ extern uintptr_t ppe_base;
 extern uintptr_t pde_base;
 extern uintptr_t pte_base;
 
+#ifdef __NetBSD__
+uintptr_t __pa(uintptr_t va)
+{
+    bool success;
+    paddr_t pa;
+
+    success = pmap_extract(pmap_kernel(), (vaddr_t)va, &pa);
+
+    KASSERT(success);
+
+    return pa;
+}
+
+uintptr_t __va(uintptr_t pa)
+{
+    return (uintptr_t)(PMAP_MAP_POOLPAGE(pa));
+}
+#else
 #define __pa(va)	\
 	MmGetPhysicalAddress((void *)(va)).QuadPart
 #define __va(pa)	\
 	(uintptr_t *)MmGetVirtualForPhysical((PHYSICAL_ADDRESS) { .QuadPart = (uintptr_t)(pa) })
+#endif
 
 #define pte_present(p)		((((pte_t *)(&(p)))->pte) & (PAGE_PRESENT | PAGE_GLOBAL))
 
