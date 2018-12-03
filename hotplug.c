@@ -6,6 +6,9 @@
  */
 #ifdef __linux__
 #include <linux/cpu.h>
+#elif defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/types.h>
 #else
 #include <ntddk.h>
 #endif
@@ -59,6 +62,7 @@ void unregister_cpu_callback(void)
 {
 	unregister_hotcpu_notifier(&cpu_notify);
 }
+#elif defined(__NetBSD__)
 #else
 static void *hotplug_cpu;
 
