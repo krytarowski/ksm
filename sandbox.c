@@ -123,7 +123,7 @@ static inline void free_sa_task(struct ksm *k, struct sa_task *task)
 int ksm_sandbox_init(struct ksm *k)
 {
 	spin_lock_init(&k->task_lock);
-	INIT_LIST_HEAD(&k->task_list);
+	KSM_INIT_LIST_HEAD(&k->task_list);
 	return 0;
 }
 
@@ -148,7 +148,7 @@ static inline int create_sa_task(struct ksm *k, pid_t pid, u64 pgd)
 
 	task->pgd = pgd;
 	task->pid = pid;
-	INIT_LIST_HEAD(&task->pages);
+	KSM_INIT_LIST_HEAD(&task->pages);
 	spin_lock_init(&task->lock);
 	for (i = 0; i < KSM_MAX_VCPUS; ++i)
 		task->eptp[i] = EPT_MAX_EPTP_LIST;

@@ -241,7 +241,7 @@ struct epage_info *ksm_find_epage(struct ksm *k, uintptr_t gpa)
 
 int ksm_epage_init(struct ksm *k)
 {
-	INIT_LIST_HEAD(&k->epage_list);
+	KSM_INIT_LIST_HEAD(&k->epage_list);
 	spin_lock_init(&k->epage_lock);
 	return 0;
 }

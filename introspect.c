@@ -49,7 +49,7 @@ static DEFINE_DPC(__call_introspect, __vmx_vmcall, HCALL_INTROSPECT, ctx);
 int ksm_introspect_init(struct ksm *k)
 {
 	spin_lock_init(&k->watch_lock);
-	INIT_LIST_HEAD(&k->watch_list);
+	KSM_INIT_LIST_HEAD(&k->watch_list);
 	return 0;
 }
 
